@@ -1,0 +1,75 @@
+activity_main.xml
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <Button
+        android:id="@+id/btnAdd"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Add"/>
+
+    <ListView
+        android:id="@+id/listView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"/>
+</LinearLayout>
+
+MainActivity
+public class MainActivity extends AppCompatActivity {
+    ListView listView;
+    Button btnAdd;
+    ModuleDbHelper dbHelper;
+    ArrayList<String> moduleList;
+    ArrayAdapter<String> adapter;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+        
+        // Initialize UI elements
+        listView = findViewById(R.id.listView);
+        btnAdd = findViewById(R.id.btnAdd);
+        dbHelper = new ModuleDbHelper(this);
+        
+        // Load data from database
+        loadModules();
+        
+        // Set click listener for Add button
+        btnAdd.setOnClickListener(v -> {
+            Intent intent = new Intent(MainActivity.this, InsertActivity.class);
+            startActivity(intent);
+        });
+        
+        // Set click listener for list items
+        listView.setOnItemClickListener((parent, view, position, id) -> {
+            Intent intent = new Intent(MainActivity.this, DetailsActivity.class);
+            intent.putExtra("ID", id);
+            startActivity(intent);
+        });
+    }
+
+    private void loadModules() {
+        // Get all modules from database
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+        Cursor cursor = db.rawQuery("SELECT * FROM " + ModuleDbHelper.TABLE_NAME, null);
+        
+        moduleList = new ArrayList<>();
+        while (cursor.moveToNext()) {
+            moduleList.add(cursor.getString(2)); // Column index 2 is NAME
+        }
+        
+        adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, moduleList);
+        listView.setAdapter(adapter);
+        cursor.close();
+    }
+    
+    @Override
+    protected void onResume() {
+        super.onResume();
+        loadModules(); // Refresh list when returning from other activities
+    }
+}
